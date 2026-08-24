@@ -57,6 +57,9 @@ public class NotRational implements Number {
        else if (other.getClass()==NotRational.class){
         
         NotRational notRational = (NotRational) other;
+        if (other.toBigDecimal().compareTo(BigDecimal.ZERO)==0){
+            throw new RuntimeException("Деление на ноль не поддерживается");
+        }
         return new NotRational(this.number.divide(notRational.toBigDecimal()));
        }
        throw new RuntimeException();
@@ -130,7 +133,7 @@ public class NotRational implements Number {
                     is_reversed=true;
                     bigInteger=bigInteger.multiply(new BigDecimal(-1));
                 }
-                System.out.println(other.toString());
+                
                 BigDecimal new_number = this.number;
                 while (bigInteger.compareTo(BigDecimal.ONE)>0){
                     

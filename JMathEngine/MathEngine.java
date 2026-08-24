@@ -72,7 +72,8 @@ public class MathEngine {
         if (function_object==null){
             throw new RuntimeException("Ненайдена функция "+function_name);
         }
-        Number[] numbers = BasicSeparator.separate(data, chrs_group5,true,this,-1);
+
+        Number[] numbers=BasicSeparator.separate(data, chrs_group5,true,this,-1);
         
 
         Number function_responce=function_object.apply(numbers);
@@ -88,17 +89,17 @@ public class MathEngine {
         this.parameters = parameters;
     }
 
-    public Number calc(String text){
+    public Number evaluate(String text){
         if (text.length()==0){
             throw new RuntimeException("Пустая строка");
         }
         text=text.replaceAll(" ", "");
         text = replace_all_in_text(text);
         //text = calc_in_breakets(text);
-        return this.calculate_inner(text,-1);
+        return this.evaluate_inner(text,-1);
     }
 
-    Number calculate_inner(String text,int level){
+    Number evaluate_inner(String text,int level){
        
         String[] operators;
         Number[] num_operands;
@@ -117,7 +118,7 @@ public class MathEngine {
                     if (breakets_count==0){
                         if (close_breaket_index==builder.length()-1){
                             if (open_breeaket_index==0){
-                                return this.calculate_inner(builder.substring(1,builder.length()-1), -1);
+                                return this.evaluate_inner(builder.substring(1,builder.length()-1), -1);
                             }
                             else {
                                 String f_name=builder.substring(0,open_breeaket_index);

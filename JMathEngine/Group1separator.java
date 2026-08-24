@@ -1,9 +1,10 @@
 package JMathEngine;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 class Group1separator {
-    private static String[] chrs_prev= new String[]{"*","/","+","-","^"};
+    private static String[] chrs_prev= new String[]{"*","/","+","-","^","%"};
     private static boolean contain_prev_char(String chr){
         for (String ch:chrs_prev){
             if (chr.equals(ch)){
@@ -26,8 +27,6 @@ class Group1separator {
         StringBuilder builder = new StringBuilder(text);
         int left = 0;
         int right = 0;
-        int border_a=0;
-        int border_b=0;
         int breakets_count=0;
         while (right<builder.length()){
             String current_s = ""+builder.charAt(right);
@@ -42,13 +41,8 @@ class Group1separator {
                 continue;
             }
             if (is_equal_one(current_s, separators)){
-                if (right==left & multiply){
-                    left=right+1;
-                    right+=1;
-                    continue;
-                }
                 if (current_s.equals("-")){
-                    if (contain_prev_char(""+builder.charAt(right-1))){
+                    if (right==0||contain_prev_char(""+builder.charAt(right-1))){
                         right+=1;
                         continue;
                     }
@@ -64,6 +58,7 @@ class Group1separator {
         for (int i = 0;i<nspi.length;i++){
             nspi[i]=spi.get(i);
         }
+       
         return nspi;
     }
 

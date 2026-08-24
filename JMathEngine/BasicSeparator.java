@@ -16,8 +16,6 @@ class BasicSeparator {
         StringBuilder builder = new StringBuilder(text);
         int left = 0;
         int right = 0;
-        int border_a=0;
-        int border_b=0;
         int breakets_count=0;
         while (right<builder.length()){
             String current_s = ""+builder.charAt(right);
@@ -42,8 +40,9 @@ class BasicSeparator {
             }
             right+=1;
         }
+        if (text.length()>0){
         spi.add(AsNumber.get_number(builder.substring(left, right),calc,level));
-
+        }
         Number[] nspi=new Number[spi.size()];
         for (int i = 0;i<nspi.length;i++){
             nspi[i]=spi.get(i);

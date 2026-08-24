@@ -15,7 +15,7 @@ class AsNumber {
                     throw new RuntimeException();
                 }
             }
-            return calc.calculate_inner(num,level);
+            return calc.evaluate_inner(num,level);
         }
     }
 
