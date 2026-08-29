@@ -1,29 +1,154 @@
 package JMathEngine;
 
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Function;
-public class MathEngine {
+import java.util.regex.Pattern;
+
+import JMathEngine.TreeCreator.EvalParameters;
+import JMathEngine.TreeCreator.TreeNode;
+public class MathEngine extends VarsFunctionsParams{
     public MathEngineParameters parameters;
+    private static HashMap<String,Number> global_vars=new HashMap<>();
+    private static HashMap<String,Function<ArrayList<Number>,Number>> global_functions=new HashMap<>();
+    private static  ArrayList<Asset> assets_list=new ArrayList<>();
 
-
-    private static String[] chrs_prev= new String[]{"*","/","+","%","^"};
-    private static final String[] chrs_group0=new String[]{">","<","!","="};
-    private static final String[] chrs_group2=new String[]{"*","/"};
-    private static final String[] chrs_group3=new String[]{"%"};
-    private static final String[] chrs_group4=new String[]{"^"};
-    private static final String[] chrs_group5=new String[]{","};
-    private static boolean contains_chr(String text){
-        for (String chr:chrs_prev){
-            if (chr.equals(text)){
-                return true;
-            }
-        }
-        return true;
+    public MathEngine(){
+        this.parameters=new MathEngineParameters();
     }
 
-    private static String replace_all_in_text(String text){
-        StringBuilder builder=new StringBuilder(text);
+    public MathEngine(MathEngineParameters parameters){
+        this.parameters=parameters;
+    }
+
+    public static void put_global_var(String name,Number number){
+        global_vars.put(name, number);
+    }
+
+    public static Number get_global_var(String var_name){
+        Number num = global_vars.getOrDefault(var_name, null);
+        if (num!=null){
+            return num;
+        }
+        for (Asset asset:assets_list){
+            num = asset.get_var(var_name);
+            if (num!=null){return num;}
+        }
+        return null;
+    }
+
+    public static void put_global_fun(String name,Function<ArrayList<Number>,Number> function){
+        global_functions.put(name, function);
+    }
+    public static void del_global_fun(String name){
+        if (global_functions.containsKey(name)){
+            global_functions.remove(name);
+        }
+    }
+    
+
+    public static Number call_global_fun(String name,ArrayList<Number> function_content){
+        Function<ArrayList<Number>,Number> function = global_functions.getOrDefault(name, null);
+        if (function!=null){
+            return function.apply(function_content);
+        }
+        Number num;
+        for (Asset asset:assets_list){
+            num = asset.get_fun(name, function_content);
+            if (num!=null){return num;}
+        }
+        return null;
+    }
+
+    static Boolean has_var_assets(String var_name){
+        for (Asset asset:assets_list){
+            if (asset.has_var(var_name)){return true;}
+        }
+        return false;
+    }
+
+    static Number on_add_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_add(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+
+    static Number on_subtract_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_subtract(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+    static Number on_multiply_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_multiply(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+
+    static Number on_divide_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_divide(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+    public static Number class_run(String text){
+        return class_run(text, new MathEngine());
+    }
+    public static Number class_run(String text,MathEngine engine){
+        text=make_text(text);
+        TreeCreator tree = new TreeCreator(text);
+        TreeNode responce = tree.make_tree();
+
+        EvalParameters evalParameters = new EvalParameters();
+        evalParameters.engine=engine;
+        return TreeCreator.eval(responce, evalParameters);
+    }
+
+    public Number run(String text){
+        return class_run(text, this);
+    }
+
+    static Number on_pow_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_pow(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+
+    static Number on_percent_asset(Number a,Number b){
+        Number num=null;
+        for (Asset asset:assets_list){
+            num = asset.on_percent(a, b);
+            if (num!=null){return num;}
+        }
+        return num;
+    }
+
+    public static void addAsset(Asset asset){
+        if (MathEngine.assets_list.contains(asset)){
+            return;
+        }
+        MathEngine.assets_list.add(asset);
+    }
+
+    public static void delAsset(Asset asset){
+        
+    }
+
+    private static void replace_all_in_text(StringBuilder builder){
         int i=0;
         while (i<builder.length()){
             if ((builder.charAt(i)=='-')|(builder.charAt(i)=='+')){
@@ -52,7 +177,6 @@ public class MathEngine {
                 }
                 if (is_negative){
                     builder.replace(i, j, "-");
-                    
                 }
                 else{
                     
@@ -64,149 +188,34 @@ public class MathEngine {
             
             i+=1;
         }
+    }
+    private static void delete_spaces(StringBuilder builder){
+        for (int i=0;i<builder.length();i++){
+            if (builder.charAt(i)==' '){
+                builder.deleteCharAt(i);
+            }
+        }
+    }
+
+    static String make_text(String text){
+        StringBuilder builder = new StringBuilder(text);
+        if (builder.length()==0){
+            throw new RuntimeException("Пустая строка");
+        }
+        delete_spaces(builder);
+        replace_all_in_text(builder);
+        if (builder.charAt(0)=='+'){
+            builder.deleteCharAt(0);
+        }
         return builder.toString();
     }
 
-    private Number parse_function(String function_name,String data){
-        Function<Number[],Number> function_object=this.parameters.get_fun(function_name);
-        if (function_object==null){
-            throw new RuntimeException("Ненайдена функция "+function_name);
-        }
-
-        Number[] numbers=BasicSeparator.separate(data, chrs_group5,true,this,-1);
-        
-
-        Number function_responce=function_object.apply(numbers);
-        return function_responce;
+    public Formula evaluate(String text){
+        return this.evaluate_inner(make_text(text));
     }
-
-    public MathEngine(MathEngineParameters parameters){
-        this.parameters = parameters;
-    }
-    public MathEngine(){
-        MathEngineParameters parameters = new MathEngineParameters();
-        parameters.calculator=this;
-        this.parameters = parameters;
-    }
-
-    public Number evaluate(String text){
-        if (text.length()==0){
-            throw new RuntimeException("Пустая строка");
-        }
-        text=text.replaceAll(" ", "");
-        text = replace_all_in_text(text);
-        //text = calc_in_breakets(text);
-        return this.evaluate_inner(text,-1);
-    }
-
-    Number evaluate_inner(String text,int level){
-       
-        String[] operators;
-        Number[] num_operands;
-        StringBuilder builder = new StringBuilder(text);
-        int open_breeaket_index=builder.indexOf("(");
-        if (open_breeaket_index!=-1){
-            int close_breaket_index=open_breeaket_index+1;
-            int breakets_count=1;
-            while (close_breaket_index<builder.length()){
-                Character chr = builder.charAt(close_breaket_index);
-                if (chr=='('){
-                    breakets_count+=1;
-                }
-                else if (chr==')'){
-                    breakets_count-=1;
-                    if (breakets_count==0){
-                        if (close_breaket_index==builder.length()-1){
-                            if (open_breeaket_index==0){
-                                return this.evaluate_inner(builder.substring(1,builder.length()-1), -1);
-                            }
-                            else {
-                                String f_name=builder.substring(0,open_breeaket_index);
-                                if (this.parameters.contains_fun(f_name)){
-                                    return this.parse_function(f_name, builder.substring(open_breeaket_index+1,close_breaket_index));
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-                close_breaket_index+=1;
-            }
-        }
-        //text=builder.toString();
-        text=builder.toString();
-        if (level<1){
-            operators = BasicSeparator.exclude_separate(text, chrs_group0);
-             if (operators.length>0){
-            
-                num_operands = BasicSeparator.separate(text, chrs_group0,true,this,1);
-                Group0.calculate(operators,num_operands,this);
-                return num_operands[num_operands.length-1];
-            }
-        }
-        if (level<2){
-            Character[] operato = Group1separator.separate_operators(text);
-         
-            if (operato.length>0){
-           
-                num_operands = Group1separator.separate(text,new String[]{"+","-"},true,this,-1);
-                
-                Group1.calculate(operato,num_operands,this);
-                return num_operands[num_operands.length-1];
-            }
-        }
-        if (level<3){
-            operators = BasicSeparator.exclude_separate(text, chrs_group2);
-            if (operators.length>0){
-                num_operands = BasicSeparator.separate(text, chrs_group2,true,this,3);
-                
-               
-                Group2.calculate(operators,num_operands,this);
-                return num_operands[num_operands.length-1];
-            }
-        }
-
-        if (level<4){
-            operators = BasicSeparator.exclude_separate(text, chrs_group3);
-            if (operators.length>0){
-            
-                num_operands = BasicSeparator.separate(text, chrs_group3,true,this,4);
-                Group3.calculate(operators,num_operands,this);
-                return num_operands[num_operands.length-1];
-            }
-        }
-
-        if (level<5){
-            operators = BasicSeparator.exclude_separate(text, chrs_group4);
-
-            if (operators.length>0){
-                
-                num_operands = BasicSeparator.separate(text,chrs_group4,true,this,5);
-              
-                Number num = Group4.calculate(num_operands,this);
-                return num;
-            }
-        }
-        try {
-            Double.parseDouble(text);
-            return new NotRational(text);
-        }
-        catch (NumberFormatException exc){
-            
-            if (this.parameters.has_var(text)){
-                return this.parameters.get_var(text);
-            }
-        }
-        throw new RuntimeException("Неизвестно: "+text+" ");
-
-    }
-
-    public static boolean is_number(String text){
-        try {
-            Double.parseDouble(text);
-            return true;
-        }
-        catch (NumberFormatException exc){}
-        return false;
+    Formula evaluate_inner(String text){
+        TreeCreator tree = new TreeCreator(text);
+        TreeNode responce = tree.make_tree();
+        return new Formula(responce,this);
     }
 }

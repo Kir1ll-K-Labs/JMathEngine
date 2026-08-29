@@ -27,6 +27,10 @@ public class NotRational implements Number {
         this.number=nuber;
     }
 
+    public NotRational(BigInteger bigInteger){
+        this.number=new BigDecimal(bigInteger);
+    }
+
     public NotRational(Integer value){
         this.number=new BigDecimal(value);
     }
@@ -38,14 +42,32 @@ public class NotRational implements Number {
     public Number subtract(Number other) {
         if (other.getClass()==Rational.class){
             Rational rational = (Rational) other;
-            return rational.subtract(this);
+            BigDecimal new_numerator = this.number.multiply(rational.denominator);
+            new_numerator=new_numerator.subtract(rational.numerator);
+            return new Rational(new_numerator,rational.denominator);
         }
         else if (other.getClass()==NotRational.class){
             return new NotRational(this.number.subtract(other.toBigDecimal()));
         }
-        throw new RuntimeException();
+        return other.subtract_reverse(this);
     }
-
+    private static boolean isTerminatingDecimal(BigInteger numerator, BigInteger denominator) {
+    
+    // Копируем знаменатель
+    BigInteger temp = denominator;
+    
+    // Делим на 2 пока делится
+    while (temp.remainder(BigInteger.TWO).equals(BigInteger.ZERO)) {
+        temp = temp.divide(BigInteger.TWO);
+    }
+    
+    // Делим на 5 пока делится
+    while (temp.remainder(BigInteger.valueOf(5)).equals(BigInteger.ZERO)) {
+        temp = temp.divide(BigInteger.valueOf(5));
+    }
+    
+    return temp.equals(BigInteger.ONE);
+    }
     @Override
     public Number divide(Number other) {
         
@@ -58,11 +80,20 @@ public class NotRational implements Number {
         
         NotRational notRational = (NotRational) other;
         if (other.toBigDecimal().compareTo(BigDecimal.ZERO)==0){
+            Number num = MathEngine.on_divide_asset(this, notRational);
+            if (num!=null){
+                return num;
+            }
             throw new RuntimeException("Деление на ноль не поддерживается");
         }
-        return new NotRational(this.number.divide(notRational.toBigDecimal()));
+        try {
+            return new NotRational(this.number.divide(notRational.number));
+        }
+        catch (ArithmeticException exc){
+            return new Rational(this.number,notRational.number);
+        }
        }
-       throw new RuntimeException();
+       return other.divide_reverse(this);
     }
 
     @Override
@@ -109,7 +140,8 @@ public class NotRational implements Number {
 
     @Override
     public String toString() {
-        return this.number.toEngineeringString();
+        BigDecimal resp = this.number.stripTrailingZeros();
+        return resp.toEngineeringString();
     }
     @Override
     public Number multiply(Number other) {
@@ -121,6 +153,37 @@ public class NotRational implements Number {
             return new NotRational(this.number.multiply(other.toBigDecimal()));
        }
        return other.multiply(this);
+    }
+
+    @Override
+    public Number percent(Number other) {
+        if (other.getClass()==NotRational.class||other.getClass()==Rational.class){
+            if (other.toBigDecimal().compareTo(BigDecimal.ZERO)<0){
+                throw new RuntimeException("% от отрицательного числа не поддерживается.");
+            }
+            if (other.toBigDecimal().compareTo(BigDecimal.ZERO)<0){
+                throw new RuntimeException("% отрицательного числа не поддерживается");
+            }
+            if (other.toBigDecimal().compareTo(this.toBigDecimal())>0){
+                return other;
+            }
+            Integer divided = this.divide(other).toInteger();
+            Number c = other.multiply(Number.valueOf(divided));
+            return this.subtract(c);
+        }
+        return other.percent_reverse(this);
+    }
+
+    @Override
+    public int compareTo(Number number) {
+        if (number instanceof Rational rt){
+            BigDecimal rhs = this.toBigDecimal().multiply(rt.denominator);
+            return rt.numerator.compareTo(rhs)*-1;
+        }
+        if (number instanceof NotRational ntr){
+            return this.number.compareTo(ntr.toBigDecimal());
+        }
+        return number.compareTo(this)*-1;
     }
 
     @Override
@@ -146,8 +209,6 @@ public class NotRational implements Number {
                 return new NotRational(new_number);
             }
         }
-        throw new RuntimeException("Возведение в степень "+other.toString()+" невозможно");
+        return other.pow_reverse(this);
     }
 }
-//0.99900000000000000000000000000000000001
-//0.99900000000000000000000000000000000001

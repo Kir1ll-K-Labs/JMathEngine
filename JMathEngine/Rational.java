@@ -2,16 +2,11 @@ package JMathEngine;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
+import java.math.RoundingMode;
 
 public class Rational implements Number {
     protected final BigDecimal numerator;
     protected final BigDecimal denominator;
-
-    @Override
-    public BigDecimal toBigDecimal() {
-        return this.numerator.divide(this.denominator,new MathContext(50));
-    }
 
     @Override
     public Boolean toBoolean() {
@@ -24,15 +19,25 @@ public class Rational implements Number {
     }
 
     @Override
-    public Double toDouble() {
-        return Double.valueOf(this.toBigDecimal().doubleValue());
-    }
-
-    @Override
     public Integer toInteger() {
         return Integer.valueOf(this.toBigDecimal().intValue());
     }
+
+    @Override
+    public int compareTo(Number number) {
+        if (number instanceof Rational rt){
+            BigDecimal one = this.numerator.multiply(rt.denominator);
+            BigDecimal two = this.denominator.multiply(rt.numerator);
+            return one.compareTo(two);
+        }
+        if (number instanceof NotRational ntr){
+            BigDecimal rhs = ntr.toBigDecimal().multiply(this.denominator);
+            return this.numerator.compareTo(rhs);
+        }
+        return number.compareTo(this)*-1;
+    }
     private BigDecimal[] normalize(){
+        try {
         int a = this.numerator.scale();
         int b = this.numerator.scale();
         a = Math.max(a, b);
@@ -64,15 +69,29 @@ public class Rational implements Number {
         new_denominator=new_denominator.divide(new BigDecimal(gcd)).stripTrailingZeros();
         return new BigDecimal[]{new_numerator,new_denominator};
     }
+    catch (ArithmeticException exception){
+        return new BigDecimal[]{this.numerator,this.denominator};
+    }
+    }
     @Override
     public Number divide(Number other) {
         if (other.getClass()==Rational.class){
             Rational r = (Rational) other;
             BigDecimal new_numerator = this.numerator.multiply(r.denominator);
             BigDecimal new_denominator = this.denominator.multiply(r.numerator);
-            return new Rational(new_numerator,new_denominator);
+            try {
+                return new NotRational(new_numerator.divide(new_denominator));
+            }
+            catch (ArithmeticException exception){
+                return new Rational(new_numerator,new_denominator);
+            }
         }
         else if (other.getClass()==NotRational.class){
+            if (other.toBigDecimal().compareTo(BigDecimal.ZERO)==0){
+                Number returning = MathEngine.on_divide_asset(this, other);
+                if (returning!=null){return returning;}
+                throw new RuntimeException("Деление на ноль не поддерживается");
+            }
             NotRational notRational = (NotRational) other;
             return new Rational(this.numerator,this.denominator.multiply(notRational.toBigDecimal()));
         }
@@ -193,6 +212,20 @@ public class Rational implements Number {
 
     public static Rational create(String numerator,String denominator){
         return new Rational(numerator,denominator);
+    }
+     @Override
+    public Number percent(Number other) {
+        if (other.toBigDecimal().compareTo(BigDecimal.ZERO)<0){
+            throw new RuntimeException("% от отрицательного числа не поддерживается.");
+        }
+        if (other.toBigDecimal().compareTo(BigDecimal.ZERO)<0){
+            throw new RuntimeException("% отрицательного числа не поддерживается");
+        }
+          if (other.toBigDecimal().compareTo(this.toBigDecimal())>0){
+            return other;
+        }
+        Number compared = new NotRational(this.toBigDecimal().divide(other.toBigDecimal(),RoundingMode.FLOOR).setScale(0,RoundingMode.FLOOR));
+        return this.subtract(other.multiply(compared));
     }
 
     @Override
