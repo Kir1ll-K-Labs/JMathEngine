@@ -1,522 +1,192 @@
 package JMathEngine;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 
-import JMathEngine.Number;
+/* JADX INFO: loaded from: classes5.dex */
 public class TreeCreator {
+    private String text_inner;
+    private static String[] chrs_prev = {"*", "/", "+", "%", "^"};
+    private static final String[] chrs_group0 = {">", "<", "!", "="};
+    private static final String[] chrs_group2 = {"*", "/"};
+    private static final String[] chrs_group3 = {"%"};
+    private static final String[] chrs_group4 = {"^"};
+    private static final String[] chrs_group5 = {","};
 
-    public static class EvalParameters{
-        public Formula formula;
+    static class EvalParameters {
         public MathEngine engine;
-        EvalParameters(){
+        public Formula formula;
 
-        }
-     }
-
-    private static final HashMap<Character,Boolean> chrs_group0=new HashMap<>();
-    private static final HashMap<Character,Boolean> chrs_group1=new HashMap<>();
-    private static final HashMap<Character,Boolean> chrs_group2=new HashMap<>();
-    private static final HashMap<Character,Boolean> chrs_group3=new HashMap<>();
-    private static final HashMap<Character,Boolean> chrs_group4=new HashMap<>();
-    private static final HashMap<Character,Boolean> chrs_group5=new HashMap<>();
-    static {
-        chrs_group0.put('=', true);
-        chrs_group0.put('<', true);
-        chrs_group0.put('>', true);
-        chrs_group0.put('!', true);
-
-        chrs_group1.put('+', true);
-        chrs_group1.put('-', true);
-
-        chrs_group2.put('*', true);
-        chrs_group2.put('/', true);
-
-        chrs_group3.put('%', true);
-
-        chrs_group4.put('^', true);
-
-        chrs_group5.put(',', true);
-    }
-    private final StringBuilder builder;
-    private int pos;
-
-    public class TreeNode{}
-
-    public class Operation_Node extends TreeNode{
-        String operation;
-        TreeNode left;
-        TreeNode right;
-        public Operation_Node(String operation,TreeNode left,TreeNode right){
-            this.operation=operation;
-            this.left=left;
-            this.right=right;
-        }
-        @Override
-        public String toString() {
-            String left_string = this.left.toString();
-            String right_string = this.right.toString();
-            return left_string+this.operation+right_string;
+        EvalParameters() {
         }
     }
 
-    public class BreaketNode extends TreeNode {
-        TreeNode innerNode;
-        BreaketNode(TreeNode node){
-            this.innerNode=node;
-        }
-        @Override
-        public String toString() {
-            return "("+this.innerNode.toString()+")";
-        }
-    }
+    static class SimplifyParameters {
+        public MathEngine engine;
+        public Nodes.TreeNode node;
+        public Number total_number;
+        public HashMap<String, Integer> vars_count = new HashMap<>();
 
-    public class Number_Node extends TreeNode{
-        public Number number;
-
-        Number_Node(String text){
-            this.number=new NotRational(text);
-        }
-
-        Number_Node(Number number){
-            this.number=number;
-        }
-
-        @Override
-        public String toString() {
-           return this.number.toString();
+        SimplifyParameters() {
         }
     }
 
-    public class VariableNode extends TreeNode {
-        public String name;
-        VariableNode(String name){
-            this.name=name;
-        }
-        @Override
-        public String toString() {
-           return this.name;
-        }
+    TreeCreator(String text) {
+        this.text_inner = text;
     }
 
-    public class FunctionNode extends TreeNode{
-        public String name;
-        public ArrayList<TreeNode> args;
+    public Nodes.TreeNode make_tree() {
+        return make_tree_inner(this.text_inner);
+    }
 
-        FunctionNode(String name, ArrayList<TreeNode> args){
-            
-            this.name=name;
-            this.args=args;
+    public static Nodes.TreeNode simplify(Nodes.TreeNode node, SimplifyParameters simplifyParameters) {
+        Nodes.TreeNode node_new = simplify_inner(node, simplifyParameters);
+        if (node_new instanceof Nodes.BreaketNode) {
+            Nodes.BreaketNode bn = (Nodes.BreaketNode) node_new;
+            return bn.innerNode;
         }
+        return node_new;
     }
 
-    public TreeCreator(String input){
-        this.builder=new StringBuilder(input);
-        this.pos=0;
-    }
-
-    public TreeNode make_tree(){
-        TreeNode node = parse_group_0();
-        if (pos!=this.builder.length()){
-            throw new IllegalArgumentException("Неизвестный символ на "+pos);
-        }
-        return node;
-    }
-
-    TreeNode parse_group_0(){
-        TreeNode node = parse_group_1();
-        while (this.pos<this.builder.length()){
-            char c = builder.charAt(this.pos);
-            if (chrs_group0.containsKey(c)){
-                
-                int spos=pos;
-                while (spos<this.builder.length()&&chrs_group0.containsKey(this.builder.charAt(pos))){
-                    pos+=1;
-                }
-                int end = this.pos;
-                TreeNode r =parse_group_1();
-                if (node instanceof Operation_Node){
-                    throw new RuntimeException("Библиотека не поддерживает цепочики сравнений.");
-                }
-                node=new Operation_Node(builder.substring(spos, end), node, r);
-            }
-            else {
-                break;
+    private static Nodes.TreeNode simplify_inner(Nodes.TreeNode node, SimplifyParameters simplifyParameters) {
+        if (node instanceof Nodes.BreaketNode) {
+            Nodes.BreaketNode bn = (Nodes.BreaketNode) node;
+            Nodes.TreeNode new_node = simplify_inner(bn.innerNode, simplifyParameters);
+            if ((new_node instanceof Nodes.VariableNode) || (new_node instanceof Nodes.NumberNode)) {
+                return new_node;
             }
         }
-        return node;
-    }
-
-    TreeNode parse_group_1(){
-        TreeNode node = parse_group_2();
-        while (this.pos<this.builder.length()){
-            char c = builder.charAt(this.pos);
-            if (chrs_group1.containsKey(c)){
-                if (this.pos==0){
+        if (node instanceof Nodes.OperationNode) {
+            Nodes.OperationNode on = (Nodes.OperationNode) node;
+            for (int i = 0; i < on.childs.size(); i++) {
+                on.childs.set(i, simplify_inner(on.childs.get(i), simplifyParameters));
+            }
+            int i2 = 1;
+            for (Nodes.TreeNode inner_node : on.childs) {
+                if (!(inner_node instanceof Nodes.NumberNode)) {
+                    i2 = 0;
                     break;
                 }
-                int spos=pos;
-                while (spos<this.builder.length()&&chrs_group1.containsKey(this.builder.charAt(pos))){
-                    pos+=1;
-                }
-                int end = this.pos;
-                TreeNode r =parse_group_2();
-                node=new Operation_Node(builder.substring(spos, end), node, r);
             }
-            else {
-                break;
+            if (i2 != 0) {
+                Nodes.NumberNode cur_node = (Nodes.NumberNode) on.childs.get(0);
+                Number cur = cur_node.number;
+                for (int i3 = 1; i3 <= on.operators.size(); i3++) {
+                    Nodes.NumberNode next_node = (Nodes.NumberNode) on.childs.get(i3);
+                    Number next = next_node.number;
+                    if (on.operators.get(i3 - 1).equals("+")) {
+                        cur = simplifyParameters.engine.parameters.on_add(cur, next);
+                    } else if (on.operators.get(i3 - 1).equals("*")) {
+                        cur = simplifyParameters.engine.parameters.on_multiply(cur, next);
+                    } else if (on.operators.get(i3 - 1).equals("/")) {
+                        cur = simplifyParameters.engine.parameters.on_divide(cur, next);
+                    } else if (on.operators.get(i3 - 1).equals("-")) {
+                        cur = simplifyParameters.engine.parameters.on_subtract(cur, next);
+                    } else if (on.operators.get(i3 - 1).equals("^")) {
+                        cur = simplifyParameters.engine.parameters.on_pow(cur, next);
+                    } else if (on.operators.get(i3 - 1).equals("%")) {
+                        cur = simplifyParameters.engine.parameters.on_percent(cur, next);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                }
+                return new Nodes.NumberNode(cur);
             }
         }
         return node;
     }
-    TreeNode parse_group_2(){
-        TreeNode node = parse_group_3();
-        while (this.pos<this.builder.length()){
-            char c = builder.charAt(this.pos);
-            if (chrs_group2.containsKey(c)){
-                int spos=pos;
-                while (spos<this.builder.length()&&chrs_group2.containsKey(this.builder.charAt(pos))){
-                    pos+=1;
-                }
-                int end = this.pos;
-                TreeNode r =parse_group_3();
-                node=new Operation_Node(builder.substring(spos, end), node, r);
-            }
-            else {
-                break;
-            }
-        }
-        return node;
+
+    public static Number eval(Nodes.TreeNode node, EvalParameters parameters) {
+        return node.eval(parameters);
     }
-    TreeNode parse_group_3(){
-        TreeNode node = parse_group_4();
-        while (this.pos<this.builder.length()){
-            char c = builder.charAt(this.pos);
-            if (chrs_group3.containsKey(c)){
-                int spos=pos;
-                //while (spos<this.builder.length()&&chrs_group3.containsKey(this.builder.charAt(pos))){
-                    //pos+=1;
-                //}
-                int end = this.pos;
-                TreeNode r =parse_group_4();
-                node=new Operation_Node(builder.substring(spos, end), node, r);
-            }
-            else {
-                break;
-            }
-        }
-        return node;
+
+    public static HashMap<String, Integer> get_variables_map(Nodes.TreeNode node) {
+        HashMap<String, Integer> map = new HashMap<>();
+        return get_variables_map(node, map);
     }
-     TreeNode parse_group_4(){
-        TreeNode node = parseFactor();
-        while (this.pos<this.builder.length()){
-            char c = builder.charAt(this.pos);
-            if (chrs_group4.containsKey(c)){
-                int spos=pos;
-                while (spos<this.builder.length()&&chrs_group4.containsKey(this.builder.charAt(pos))){
-                    pos+=1;
-                }
-                int end = this.pos;
-                TreeNode r =parse_group_4();
-                node=new Operation_Node(builder.substring(spos, end), node, r);
-            }
-            else {
-                break;
-            }
-        }
-        return node;
-     }
-     TreeNode parseFactor(){
-        if (pos>=this.builder.length()) throw new IllegalArgumentException();
-        char c = this.builder.charAt(pos);
-        if (Character.isLetter(c)||c=='_'||c=='-'){
-            String[] spi = parseIdentifier();
-            if (spi[1].equals("1")){
-                if (pos<this.builder.length()&&this.builder.charAt(pos)=='('){
-                    return parseFunctionCall(spi[0]);
-                }
-                return new VariableNode(spi[0]);
-            }
-            else {
-                return new Number_Node(spi[0]);
-            }
-        }
-        if (Character.isDigit(c)||c=='-'){
-            return parseNumber();
-        }
-        if (c=='('){
-            this.pos+=1;
-            TreeNode inner = parse_group_0();
-            if (pos>=builder.length()||builder.charAt(pos)!=')'){
-                throw new IllegalArgumentException("");
-            }
-            this.pos+=1;
-            if (inner instanceof BreaketNode bn){
-                inner = bn.innerNode;
-            }
-            return new BreaketNode(inner);
-        }
-        throw new IllegalArgumentException();
-     }
 
-     private String[] parseIdentifier(){
-        int start = pos;
-        String is_var="0";
-        if (builder.charAt(pos)=='-'){
-            this.pos+=1;
-        }
-        while (pos <this.builder.length()&&(Character.isLetterOrDigit(this.builder.charAt(pos))||this.builder.charAt(pos)=='=')){
-            if (Character.isLetter(this.builder.charAt(pos))){
-                is_var="1";
+    public static HashMap<String, Integer> get_variables_map(Nodes.TreeNode node, HashMap<String, Integer> map) {
+        if (node instanceof Nodes.VariableNode) {
+            Nodes.VariableNode vn = (Nodes.VariableNode) node;
+            map.put(vn.name, Integer.valueOf(map.getOrDefault(vn.name, 0).intValue() + 1));
+        } else {
+            if (node instanceof Nodes.BreaketNode) {
+                Nodes.BreaketNode bn = (Nodes.BreaketNode) node;
+                return get_variables_map(bn.innerNode, map);
             }
-            this.pos+=1;
+            if (node instanceof Nodes.OperationNode) {
+                Nodes.OperationNode on = (Nodes.OperationNode) node;
+                for (Nodes.TreeNode tnode : on.childs) {
+                    get_variables_map(tnode, map);
+                }
+            }
         }
-        return new String[]{this.builder.substring(start, this.pos),is_var};
-     }
+        return map;
+    }
 
-     private TreeNode parseFunctionCall(String name){
-        this.pos+=1;
-        ArrayList<TreeNode> args = new ArrayList<>();
-        if (pos<builder.length()&&builder.charAt(pos)==')'){
-            return new FunctionNode(name, args);
-        }
-        args.add(parse_group_0());
-        while (pos<builder.length()&&builder.charAt(pos)==','){
-            this.pos+=1;
-            args.add(parse_group_0());
-        }
-        this.pos+=1;
-        return new FunctionNode(name, args);
-     }
-
-     TreeNode parseNumber(){
-        int start = this.pos;
-        if (this.builder.charAt(this.pos)=='-'){
-            this.pos+=1;
-        }
-        boolean has_point=false;
-        while (pos<this.builder.length()&&(Character.isDigit(this.builder.charAt(pos))||this.builder.charAt(pos)=='.')){
-            if (this.builder.charAt(pos)=='.'){
-                if (has_point){
-                    throw new IllegalArgumentException("Double Point in one number");
-                }
-                has_point=true;
-            }
-            this.pos+=1;
-        }
-        return new Number_Node(this.builder.substring(start,this.pos));
-     }
-
-     TreeNode parseVariable(){
-        int start=pos;
-        while (pos<this.builder.length()&&(Character.isLetterOrDigit(this.builder.charAt(this.pos))||this.builder.charAt(this.pos)=='_')){
-            pos+=1;
-        }
-        return new VariableNode(this.builder.substring(start, pos));
-     }
-
-     public static Number eval(TreeNode node,EvalParameters evalParameters){
-        if (node instanceof Number_Node n) return n.number;
-        if (node instanceof VariableNode v){
-            boolean is_negative=false;
-            String new_name = v.name;
-            Number variable = null;
-            if (new_name.charAt(0)=='-'){
-                
-                is_negative=true;
-                new_name=new_name.substring(1);
-            }
-            if (evalParameters.formula!=null){
-                variable = evalParameters.formula.get_var(new_name);
-                if (variable!=null){
-                if (is_negative){
-                    variable=variable.multiply(Number.valueOf(-1));
-                }
-                return variable;
-            }
-            }
-            if (evalParameters.engine!=null){
-                variable = evalParameters.engine.get_var(new_name);
-                if (variable!=null){
-                if (is_negative){
-                    variable=variable.multiply(Number.valueOf(-1));
-                }
-                return variable;
-                }
-            }
-            variable = MathEngine.get_global_var(new_name);
-            if (variable!=null){
-                if (is_negative){
-                    variable=variable.multiply(Number.valueOf(-1));
-                }
-                return variable;
-                }
-            throw new IllegalStateException("Ненайдена переменная "+new_name);
-        }
-        if (node instanceof Operation_Node op){
-            Number l = eval(op.left,evalParameters);
-            Number r = eval(op.right,evalParameters);
-            
-            if (op.operation.equals(">")){
-                if (l.compareTo(r)>0){
-                    return Number.valueOf(1);
-                }
-                return Number.valueOf(0);
-            }
-            if (op.operation.equals("<")){
-                if (l.compareTo(r)<0){
-                    return Number.valueOf(1);
-                }
-                return Number.valueOf(0);
-            }
-            if (op.operation.equals(">=")){
-                if (l.compareTo(r)>=0){
-                    return Number.valueOf(1);
-                }
-            }
-            if (op.operation.equals("<=")){
-                if (l.compareTo(r)<=0){
-                    return Number.valueOf(1);
-                }
-            }
-            if (op.operation.equals("==")){
-                if (l.compareTo(r)==0){
-                    return Number.valueOf(1);
-                }
-            }
-            if (op.operation.equals("!=")){
-                if (l.compareTo(r)!=0){
-                    return Number.valueOf(1);
-                }
-            }
-            
-            return switch (op.operation){
-                case "+" -> evalParameters.engine.parameters.on_add(l, r);
-                case "*" -> evalParameters.engine.parameters.on_multiply(l, r);
-                case "/" -> evalParameters.engine.parameters.on_divide(l, r);
-                case "-" -> evalParameters.engine.parameters.on_subtract(l, r);
-                case "^" -> evalParameters.engine.parameters.on_pow(l, r);
-                case "%" -> evalParameters.engine.parameters.on_percent(l, r);
-                default -> throw new IllegalArgumentException();
-            };
-        }
-        if (node instanceof FunctionNode fn){
-            boolean is_negative=false;
-            String new_name = fn.name;
-            if (new_name.charAt(0)=='-'){
-                is_negative=true;
-                new_name=new_name.substring(1);
-            }
-            ArrayList<Number> spi = new ArrayList<>();
-            for (int i = 0;i<fn.args.size();i++){
-                spi.add(eval(fn.args.get(i), evalParameters));
-            }
-            Number ret = evalParameters.engine.call_function(new_name, spi);
-            if (ret!=null){
-                if (is_negative){
-                    ret=ret.multiply(Number.valueOf(-1));
-                }
-                return ret;
-            }
-            ret = MathEngine.call_global_fun(new_name, spi);
-            if (ret!=null){
-                if (is_negative){
-                    ret=ret.multiply(Number.valueOf(-1));
-                }
-                return ret;
-            }
-            throw new IllegalStateException("Ненайдена функция "+new_name);
-        }
-        if (node instanceof BreaketNode bn){
-            return eval(bn.innerNode, evalParameters);
-        }
-        throw new IllegalStateException();
-     }
-
-
-     public static String printNode(TreeNode node){
+    public static String printNode(Nodes.TreeNode node) {
         return node.toString();
-     }
-    TreeNode simplify(TreeNode node,MathEngine engine){
-         if (node == null) return null;
-
-        // Листья
-        if (node instanceof Number_Node || node instanceof VariableNode) {
-            return node;
-        }
-
-    // BreaketNode: упрощаем внутри, если результат число - убираем скобки
-    if (node instanceof BreaketNode) {
-        BreaketNode bNode = (BreaketNode) node;
-        TreeNode inner = simplify(bNode.innerNode,engine);
-        
-        if (inner instanceof Number_Node) {
-            return inner; // (2+2) -> 4
-        }
-        return new BreaketNode(inner);
     }
 
-    // BinaryOpNode: ГЛАВНОЕ МЕСТО ДЛЯ ИСПРАВЛЕНИЯ
-    if (node instanceof Operation_Node) {
-        Operation_Node binNode = (Operation_Node) node;
-        
-        // 1. Рекурсивно упрощаем детей (это раскроет цепочки снизу вверх)
-        TreeNode left = simplify(binNode.left,engine);
-        TreeNode right = simplify(binNode.right,engine);
-        // 2. Пытаемся свернуть константы
-        if (left instanceof Operation_Node && ((Operation_Node) left).operation.equals(binNode.operation)) {
-            Operation_Node leftAdd = (Operation_Node) left;
-        // Если у левого + правый ребёнок — число, а текущий правый ребёнок — тоже число
-        if (leftAdd.right instanceof Number_Node && right instanceof Number_Node) {
-            Number lVal = ((Number_Node) leftAdd.right).number;
-            Number rVal = ((Number_Node) right).number;
-            String real_op = binNode.operation;
-            if (binNode.operation.equals("/")){
-                real_op="*";
-            }
-            try {
-                Number sum =switch (real_op){
-                case "+" -> engine.parameters.on_add(lVal, rVal);
-                case "*" -> engine.parameters.on_multiply(lVal, rVal);
-                case "/" -> engine.parameters.on_divide(lVal, rVal);
-                case "-" -> engine.parameters.on_subtract(lVal, rVal);
-                case "^" -> engine.parameters.on_pow(lVal, rVal);
-                case "%" -> engine.parameters.on_percent(lVal, rVal);
-                default -> throw new IllegalArgumentException();
-            };
-                // Строим новое дерево: (левый левый) + (сумма чисел)
-                return new Operation_Node(binNode.operation, leftAdd.left, new Number_Node(sum));
-            } catch (Exception e) {
-                // Если не получилось — оставляем как есть
+    static Nodes.TreeNode make_tree_inner(String text) {
+        if (text.charAt(0) == '+') {
+            text = text.substring(1);
+        }
+        StringBuilder builder = new StringBuilder(text);
+        int open_breeaket_index = builder.indexOf("(");
+        if (open_breeaket_index != -1) {
+            int breakets_count = 1;
+            for (int close_breaket_index = open_breeaket_index + 1; close_breaket_index < builder.length(); close_breaket_index++) {
+                Character chr = Character.valueOf(builder.charAt(close_breaket_index));
+                if (chr.charValue() == '(') {
+                    breakets_count++;
+                } else if (chr.charValue() == ')' && (breakets_count = breakets_count - 1) == 0) {
+                    if (close_breaket_index != builder.length() - 1) {
+                        break;
+                    }
+                    if (open_breeaket_index == 0) {
+                        return new Nodes.BreaketNode(make_tree_inner(builder.substring(1, builder.length() - 1)));
+                    }
+                    String f_name = builder.substring(0, open_breeaket_index);
+                    if (!Pattern.matches("[+,*,-,/]", f_name)) {
+                        break;
+                    }
+                    return new Nodes.FunctionNode(f_name, BasicSeparator.separate(builder.substring(open_breeaket_index + 1, close_breaket_index), chrs_group5, true));
+                }
             }
         }
-    }
-
-        if (left instanceof Number_Node && right instanceof Number_Node) {
-            Number lVal = ((Number_Node) left).number;
-            Number rVal = ((Number_Node) right).number;
-            try {
-                Number result = switch (binNode.operation){
-                case "+" -> engine.parameters.on_add(lVal, rVal);
-                case "*" -> engine.parameters.on_multiply(lVal, rVal);
-                case "/" -> engine.parameters.on_divide(lVal, rVal);
-                case "-" -> engine.parameters.on_subtract(lVal, rVal);
-                case "^" -> engine.parameters.on_pow(lVal, rVal);
-                case "%" -> engine.parameters.on_percent(lVal, rVal);
-                default -> throw new IllegalArgumentException();
-            };
-                return new Number_Node(result);
-            } catch (Exception e) {
-                // Если ошибка (деление на 0 и т.п.), возвращаем упрощенных детей
-                return new Operation_Node(binNode.operation, left, right);
-            }
+        ArrayList<String> operators = BasicSeparator.exclude_separate(text, chrs_group0);
+        if (operators.size() > 0) {
+            ArrayList<Nodes.TreeNode> tree_nodes = BasicSeparator.separate(text, chrs_group0, true);
+            return new Nodes.OperationNode(operators, tree_nodes);
         }
-
-        // 4. Возвращаем новый узел с уже упрощенными детьми
-        // Даже если мы не свернули в число, дети могли стать проще (например, из дерева в число)
-        return new Operation_Node(binNode.operation, left, right);
+        ArrayList<String> operators2 = Group1separator.separate_operators(text);
+        if (operators2.size() > 0) {
+            ArrayList<Nodes.TreeNode> tree_nodes2 = Group1separator.separate(text, new String[]{"+", "-"}, true);
+            System.out.println(tree_nodes2);
+            return new Nodes.OperationNode(operators2, tree_nodes2);
+        }
+        ArrayList<String> operators3 = BasicSeparator.exclude_separate(text, chrs_group2);
+        if (operators3.size() > 0) {
+            ArrayList<Nodes.TreeNode> tree_nodes3 = BasicSeparator.separate(text, chrs_group2, true);
+            return new Nodes.OperationNode(operators3, tree_nodes3);
+        }
+        ArrayList<String> operators4 = BasicSeparator.exclude_separate(text, chrs_group3);
+        if (operators4.size() > 0) {
+            ArrayList<Nodes.TreeNode> tree_nodes4 = BasicSeparator.separate(text, chrs_group3, true);
+            return new Nodes.OperationNode(operators4, tree_nodes4);
+        }
+        ArrayList<String> operators5 = BasicSeparator.exclude_separate(text, chrs_group4);
+        if (operators5.size() > 0) {
+            ArrayList<Nodes.TreeNode> tree_nodes5 = BasicSeparator.separate(text, chrs_group4, true);
+            return new Nodes.OperationNode(operators5, tree_nodes5);
+        }
+        try {
+            Double.parseDouble(text);
+            return new Nodes.NumberNode(Number.valueOf(text));
+        } catch (NumberFormatException e) {
+            return new Nodes.VariableNode(text);
+        }
     }
-
-    return node;
-     }
-
 }
