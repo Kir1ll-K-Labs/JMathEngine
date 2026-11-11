@@ -122,7 +122,7 @@ public class MathEngine extends VarsFunctionsParams {
 
     public static Number class_run(String text, MathEngine engine) {
         TreeCreator tree = new TreeCreator(make_text(text));
-        Nodes.TreeNode responce = tree.make_tree();
+        Nodes.TreeNode responce = tree.make_tree(engine);
         TreeCreator.EvalParameters evalParameters = new TreeCreator.EvalParameters();
         evalParameters.engine = engine;
         return TreeCreator.eval(responce, evalParameters);
@@ -199,10 +199,13 @@ public class MathEngine extends VarsFunctionsParams {
     }
 
     private static void delete_spaces(StringBuilder builder) {
-        for (int i = 0; i < builder.length(); i++) {
-            if (builder.charAt(i) == ' ') {
+        int i = 0;
+        while (i<builder.length()){
+             if (builder.charAt(i) == ' ') {
                 builder.deleteCharAt(i);
+                continue;
             }
+            i++;
         }
     }
 
@@ -220,20 +223,23 @@ public class MathEngine extends VarsFunctionsParams {
     }
 
     public Formula evaluate(String text) {
+         if (BasicSeparator.is_equal_one(text.substring(text.length()-1, text.length()), new String[]{"+","*","/","%","^","-"})){
+            return evaluatePostfix(text);
+        }
         return evaluate_inner(make_text(text));
     }
 
     public Formula evaluatePostfix(String text){
-        ArrayList<Object> main_list = BasicSeparator.separate_postfix(text);
+        ArrayList<Object> main_list = BasicSeparator.separate_postfix(text,this);
         TreeNode node = Utils.parse_postfix(main_list);
-        System.out.println(node.toString());
+        
         Formula f = new Formula(node,new MathEngine());
         return f;
     }
 
     Formula evaluate_inner(String text) {
         TreeCreator tree = new TreeCreator(text);
-        Nodes.TreeNode responce = tree.make_tree();
+        Nodes.TreeNode responce = tree.make_tree(this);
         return new Formula(responce, this);
     }
 }

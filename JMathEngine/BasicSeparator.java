@@ -16,7 +16,7 @@ class BasicSeparator {
         }
         return false;
     }
-    public static ArrayList<Object> separate_postfix(String text) {
+    public static ArrayList<Object> separate_postfix(String text,MathEngine engine) {
         ArrayList<Object> spi = new ArrayList<>();
         StringBuilder builder = new StringBuilder(text);
         int left = 0;
@@ -29,9 +29,13 @@ class BasicSeparator {
             } else if (current_s.equals(")")) {
                 breakets_count--;
             }
-            if (breakets_count > 0 || left==right) {
+            if (breakets_count>0){
+                right++;
+                continue;
+            }
+            if (left==right) {
                 if (is_equal_one(current_s, new String[]{"+","-","*","/","%","^"})) { 
-                    System.out.println("ДА");
+                    
                     spi.add(current_s);
                 }
             } else {
@@ -42,17 +46,17 @@ class BasicSeparator {
                         continue;
                        
                     }
-                    spi.add(TreeCreator.make_tree_inner(builder.substring(left, right)));
+                    spi.add(TreeCreator.make_tree_inner(builder.substring(left, right),engine));
                      left = right+1;
                 }
             }
             right++;
         }
-        System.out.println(Arrays.toString(spi.toArray()));
+        
         return spi;
     }
 
-    public static ArrayList<Nodes.TreeNode> separate(String text, String[] separators, boolean multiply) {
+    public static ArrayList<Nodes.TreeNode> separate(String text, String[] separators, boolean multiply,MathEngine engine) {
         ArrayList<Nodes.TreeNode> spi = new ArrayList<>();
         StringBuilder builder = new StringBuilder(text);
         int left = 0;
@@ -73,14 +77,14 @@ class BasicSeparator {
                         left = right + 1;
                         right++;
                     } else {
-                        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right)));
+                        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right),engine));
                         left = right + 1;
                     }
                 }
                 right++;
             }
         }
-        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right)));
+        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right),engine));
         return spi;
     }
 

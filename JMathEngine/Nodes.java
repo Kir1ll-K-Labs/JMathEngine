@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class Nodes {
-
+    
     public interface TreeNode {
         Number eval(TreeCreator.EvalParameters evalParameters);
     }

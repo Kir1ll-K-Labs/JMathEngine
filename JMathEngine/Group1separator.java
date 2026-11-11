@@ -27,7 +27,7 @@ class Group1separator {
         return false;
     }
 
-    public static ArrayList<Nodes.TreeNode> separate(String text, String[] separators, boolean multiply) {
+    public static ArrayList<Nodes.TreeNode> separate(String text, String[] separators, boolean multiply,MathEngine engine) {
         ArrayList<Nodes.TreeNode> spi = new ArrayList<>();
         StringBuilder builder = new StringBuilder(text);
         int left = 0;
@@ -49,14 +49,14 @@ class Group1separator {
                     } else if (current_s.equals("-") && contain_prev_char("" + builder.charAt(right - 1))) {
                         right++;
                     } else {
-                        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right)));
+                        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right),engine));
                         left = right + 1;
                     }
                 }
                 right++;
             }
         }
-        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right)));
+        spi.add(TreeCreator.make_tree_inner(builder.substring(left, right),engine));
         return spi;
     }
 

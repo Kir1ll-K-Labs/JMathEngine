@@ -17,9 +17,13 @@ public interface Number {
 
     Number subtract(Number number);
 
-    Integer toInteger();
+    default Integer toInteger(){
+        throw new RuntimeException(toString() + " не может быть преобразован в Integer");
+    };
 
-    Long toLong();
+    default Long toLong(){
+         throw new RuntimeException(toString() + " не может быть преобразован в Long");
+    };
 
     String toString();
 

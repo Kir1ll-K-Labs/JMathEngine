@@ -36,8 +36,8 @@ public class TreeCreator {
         this.text_inner = text;
     }
 
-    public Nodes.TreeNode make_tree() {
-        return make_tree_inner(this.text_inner);
+    public Nodes.TreeNode make_tree(MathEngine engine) {
+        return make_tree_inner(this.text_inner,engine);
     }
 
     public static Nodes.TreeNode simplify(Nodes.TreeNode node, SimplifyParameters simplifyParameters) {
@@ -129,7 +129,7 @@ public class TreeCreator {
         return node.toString();
     }
 
-    static Nodes.TreeNode make_tree_inner(String text) {
+    static Nodes.TreeNode make_tree_inner(String text,MathEngine engine) {
         if (text.charAt(0) == '+') {
             text = text.substring(1);
         }
@@ -146,45 +146,45 @@ public class TreeCreator {
                         break;
                     }
                     if (open_breeaket_index == 0) {
-                        return new Nodes.BreaketNode(make_tree_inner(builder.substring(1, builder.length() - 1)));
+                        return new Nodes.BreaketNode(make_tree_inner(builder.substring(1, builder.length() - 1),engine));
                     }
                     String f_name = builder.substring(0, open_breeaket_index);
                     if (!Pattern.matches("[+,*,-,/]", f_name)) {
                         break;
                     }
-                    return new Nodes.FunctionNode(f_name, BasicSeparator.separate(builder.substring(open_breeaket_index + 1, close_breaket_index), chrs_group5, true));
+                    return new Nodes.FunctionNode(f_name, BasicSeparator.separate(builder.substring(open_breeaket_index + 1, close_breaket_index), chrs_group5, true,engine));
                 }
             }
         }
         ArrayList<String> operators = BasicSeparator.exclude_separate(text, chrs_group0);
         if (operators.size() > 0) {
-            ArrayList<Nodes.TreeNode> tree_nodes = BasicSeparator.separate(text, chrs_group0, true);
+            ArrayList<Nodes.TreeNode> tree_nodes = BasicSeparator.separate(text, chrs_group0, true,engine);
             return new Nodes.OperationNode(operators, tree_nodes);
         }
         ArrayList<String> operators2 = Group1separator.separate_operators(text);
         if (operators2.size() > 0) {
-            ArrayList<Nodes.TreeNode> tree_nodes2 = Group1separator.separate(text, new String[]{"+", "-"}, true);
-            System.out.println(tree_nodes2);
+            ArrayList<Nodes.TreeNode> tree_nodes2 = Group1separator.separate(text, new String[]{"+", "-"}, true,engine);
+            
             return new Nodes.OperationNode(operators2, tree_nodes2);
         }
         ArrayList<String> operators3 = BasicSeparator.exclude_separate(text, chrs_group2);
         if (operators3.size() > 0) {
-            ArrayList<Nodes.TreeNode> tree_nodes3 = BasicSeparator.separate(text, chrs_group2, true);
+            ArrayList<Nodes.TreeNode> tree_nodes3 = BasicSeparator.separate(text, chrs_group2, true,engine);
             return new Nodes.OperationNode(operators3, tree_nodes3);
         }
         ArrayList<String> operators4 = BasicSeparator.exclude_separate(text, chrs_group3);
         if (operators4.size() > 0) {
-            ArrayList<Nodes.TreeNode> tree_nodes4 = BasicSeparator.separate(text, chrs_group3, true);
+            ArrayList<Nodes.TreeNode> tree_nodes4 = BasicSeparator.separate(text, chrs_group3, true,engine);
             return new Nodes.OperationNode(operators4, tree_nodes4);
         }
         ArrayList<String> operators5 = BasicSeparator.exclude_separate(text, chrs_group4);
         if (operators5.size() > 0) {
-            ArrayList<Nodes.TreeNode> tree_nodes5 = BasicSeparator.separate(text, chrs_group4, true);
+            ArrayList<Nodes.TreeNode> tree_nodes5 = BasicSeparator.separate(text, chrs_group4, true,engine);
             return new Nodes.OperationNode(operators5, tree_nodes5);
         }
         try {
             Double.parseDouble(text);
-            return new Nodes.NumberNode(Number.valueOf(text));
+            return new Nodes.NumberNode( engine.parameters.on_number_parse(text));
         } catch (NumberFormatException e) {
             return new Nodes.VariableNode(text);
         }

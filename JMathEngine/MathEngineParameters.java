@@ -18,6 +18,10 @@ public class MathEngineParameters {
         }
     }
 
+    protected Number on_number_parse(String text){
+        return Number.valueOf(text);
+    }
+
     protected Number on_multiply(Number a, Number b) {
         try {
             return a.multiply(b);

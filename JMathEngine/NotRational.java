@@ -116,7 +116,7 @@ public class NotRational implements Number {
 
     @Override // JMathEngine.Number
     public Double toDouble() {
-        return Double.valueOf(this.number.doubleValue());
+        return this.number.doubleValue();
     }
 
     @Override // JMathEngine.Number

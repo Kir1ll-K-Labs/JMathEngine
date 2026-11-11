@@ -90,7 +90,11 @@ public class Utils {
 
      protected static TreeNode parse_postfix(ArrayList<Object> list){
         Integer index = list.size()-1;
-        TreeNode node = parse_postfix(list, new IndexData(index));
+        IndexData indexData = new IndexData(index);
+        TreeNode node = parse_postfix(list, indexData);
+        if (indexData.get()!=-1){
+            throw new RuntimeException();
+        }
         make_breakets_node(node);
         return node;
      }

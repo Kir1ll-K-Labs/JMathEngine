@@ -20,7 +20,7 @@ public class Formula extends VarsFunctionsParams {
     public Formula(String text) {
         this.engine = new MathEngine();
         TreeCreator tree = new TreeCreator(MathEngine.make_text(text));
-        Nodes.TreeNode responce = tree.make_tree();
+        Nodes.TreeNode responce = tree.make_tree(this.engine);
         this.node = responce;
     }
 
