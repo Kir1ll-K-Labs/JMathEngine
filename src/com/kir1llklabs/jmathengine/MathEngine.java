@@ -1,10 +1,10 @@
-package JMathEngine;
+package jmathengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.Function;
 
-import JMathEngine.Nodes.TreeNode;
+import jmathengine.Nodes.TreeNode;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class MathEngine extends VarsFunctionsParams {
@@ -223,7 +223,7 @@ public class MathEngine extends VarsFunctionsParams {
     }
 
     public Formula evaluate(String text) {
-         if (BasicSeparator.is_equal_one(text.substring(text.length()-1, text.length()), new String[]{"+","*","/","%","^","-"})){
+        if (BasicSeparator.is_equal_one(text.substring(text.length()-1, text.length()), new String[]{"+","*","/","%","^","-"})){
             return evaluatePostfix(text);
         }
         return evaluate_inner(make_text(text));

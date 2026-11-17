@@ -1,4 +1,4 @@
-package JMathEngine;
+package jmathengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;

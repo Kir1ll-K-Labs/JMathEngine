@@ -1,12 +1,12 @@
-package JMathEngine;
+package jmathengine;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 
-import JMathEngine.Nodes.BreaketNode;
-import JMathEngine.Nodes.OperationNode;
-import JMathEngine.Nodes.TreeNode;
+import jmathengine.Nodes.BreaketNode;
+import jmathengine.Nodes.OperationNode;
+import jmathengine.Nodes.TreeNode;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class Utils {

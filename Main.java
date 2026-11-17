@@ -1,7 +1,5 @@
-import JMathEngine.Formula;
-import JMathEngine.MathEngine;
-import JMathEngine.MathEngineParameters;
-import JMathEngine.Number;
+
+
 class DoubleNumber implements Number {
     private Double inner_double;
     DoubleNumber(Double number){

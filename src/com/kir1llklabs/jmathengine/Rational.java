@@ -1,4 +1,4 @@
-package JMathEngine;
+package jmathengine;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

@@ -1,4 +1,4 @@
-package JMathEngine;
+package jmathengine;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,7 +22,7 @@ public interface Number {
     };
 
     default Long toLong(){
-         throw new RuntimeException(toString() + " не может быть преобразован в Long");
+        throw new RuntimeException(toString() + " не может быть преобразован в Long");
     };
 
     String toString();

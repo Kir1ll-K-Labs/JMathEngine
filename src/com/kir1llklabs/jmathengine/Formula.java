@@ -1,11 +1,11 @@
-package JMathEngine;
+package jmathengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import JMathEngine.Nodes.BreaketNode;
-import JMathEngine.Nodes.OperationNode;
-import JMathEngine.Nodes.TreeNode;
+import jmathengine.Nodes.BreaketNode;
+import jmathengine.Nodes.OperationNode;
+import jmathengine.Nodes.TreeNode;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class Formula extends VarsFunctionsParams {
