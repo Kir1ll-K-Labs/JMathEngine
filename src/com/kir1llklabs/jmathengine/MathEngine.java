@@ -1,10 +1,10 @@
-package jmathengine;
+package com.kir1llklabs.jmathengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.Function;
 
-import jmathengine.Nodes.TreeNode;
+import com.kir1llklabs.jmathengine.Nodes.TreeNode;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class MathEngine extends VarsFunctionsParams {

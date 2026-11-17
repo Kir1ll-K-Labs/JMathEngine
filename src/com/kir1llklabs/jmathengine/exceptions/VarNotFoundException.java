@@ -1,4 +1,4 @@
-package jmathengine.exceptions;
+package com.kir1llklabs.jmathengine.exceptions;
 
 /* JADX INFO: loaded from: classes3.dex */
 public class VarNotFoundException extends RuntimeException {

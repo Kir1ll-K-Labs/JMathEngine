@@ -1,5 +1,7 @@
 
-
+import com.kir1llklabs.jmathengine.MathEngine;
+import com.kir1llklabs.jmathengine.MathEngineParameters;
+import com.kir1llklabs.jmathengine.Number;
 class DoubleNumber implements Number {
     private Double inner_double;
     DoubleNumber(Double number){
@@ -12,7 +14,7 @@ class DoubleNumber implements Number {
 
     @Override
     public Number add(Number number) {
-       return new DoubleNumber(this.inner_double+number.toDouble());
+        return new DoubleNumber(this.inner_double+number.toDouble());
     }
 
     @Override
@@ -34,7 +36,7 @@ class DoubleNumber implements Number {
     }
     @Override
     public Number subtract(Number number) {
-         return new DoubleNumber(this.inner_double/number.toDouble());
+        return new DoubleNumber(this.inner_double/number.toDouble());
     }
 
     @Override

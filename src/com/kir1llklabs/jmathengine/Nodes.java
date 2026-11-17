@@ -1,6 +1,6 @@
-package jmathengine;
+package com.kir1llklabs.jmathengine;
 
-import jmathengine.exceptions.VarNotFoundException;
+import com.kir1llklabs.jmathengine.exceptions.VarNotFoundException;
 import java.util.ArrayList;
 
 /* JADX INFO: loaded from: classes5.dex */

@@ -1,4 +1,4 @@
-package jmathengine;
+package com.kir1llklabs.jmathengine;
 
 import java.util.ArrayList;
 import java.util.Arrays;

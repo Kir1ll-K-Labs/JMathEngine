@@ -1,4 +1,4 @@
-package jmathengine;
+package com.kir1llklabs.jmathengine;
 
 /* JADX INFO: loaded from: classes5.dex */
 public class MathEngineParameters {
